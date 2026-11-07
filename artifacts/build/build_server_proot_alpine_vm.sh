@@ -47,6 +47,10 @@ if [ ! -z "$CI_BRANCH" ] && [ ! -z "$CI_BUILD_NUMBER" ]; then
 	echo '#define GIT_TAG "'$CI_BUILD_NUMBER'"' >>/src/code/shared/cfx_version.h
 	echo '#define BUILD_ID "cfx-'$CI_PIPELINE_ID'"' >>/src/code/shared/cfx_version.h
 fi
-make clean
-make clean config=release
-make -j${JOB_SLOTS} config=release
+if [ "${CONTINUE_BUILD:-}" = "1" ]; then
+	make FXServer -j${JOB_SLOTS} config=release
+else
+	make clean
+	make clean config=release
+	make FXServer -j${JOB_SLOTS} config=release
+fi

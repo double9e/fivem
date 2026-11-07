@@ -4,6 +4,7 @@
 
 #include <EnetUvDatagram.h>
 
+#include <deque>
 #include <mutex>
 
 TEST_CASE("EnetUv retain policy respects backlog cap")
@@ -65,5 +66,65 @@ TEST_CASE("EnetUv fill uses heap path under backlog")
 	REQUIRE_FALSE(dgram.dataFromPool);
 	REQUIRE(dgram.data != nullptr);
 	REQUIRE(memcmp(dgram.data, payload, sizeof(payload)) == 0);
-	dgram.ReleaseData(nullptr, nullptr);
+	delete[] dgram.data;
+	dgram.data = nullptr;
+}
+
+TEST_CASE("EnetUv backlog boundary retain vs fallback")
+{
+	REQUIRE(EnetUvShouldRetainPoolBuffer(2048, 512, kEnetUvMaxPoolRetainedQueuedDatagrams - 1));
+	REQUIRE_FALSE(EnetUvShouldRetainPoolBuffer(2048, 512, kEnetUvMaxPoolRetainedQueuedDatagrams));
+}
+
+TEST_CASE("EnetUv queued pool nodes recycle after drain")
+{
+	TEnetUvPacketPool pool(new uint8_t[TEnetUvPacketPool::kBufferSize]);
+	std::mutex poolLock;
+	std::deque<EnetUvDatagram> queue;
+
+	for (size_t i = 0; i < kEnetUvMaxPoolRetainedQueuedDatagrams; ++i)
+	{
+		char* node = (char*)pool.allocate(TEnetUvPacketPool::kNodeSize);
+		memset(node, static_cast<int>(i), 32);
+		EnetUvDatagram d;
+		d.data = node;
+		d.dataFromPool = true;
+		d.read = 32;
+		queue.push_back(std::move(d));
+	}
+
+	while (!queue.empty())
+	{
+		auto d = std::move(queue.front());
+		queue.pop_front();
+		d.ReleaseData(&pool, &poolLock);
+	}
+
+	void* recycled = pool.allocate(TEnetUvPacketPool::kNodeSize);
+	REQUIRE(recycled != nullptr);
+	pool.deallocate(recycled, TEnetUvPacketPool::kNodeSize);
+}
+
+TEST_CASE("EnetUv retain path preserves payload bytes")
+{
+	uint8_t uvBuf[512];
+	for (size_t i = 0; i < sizeof(uvBuf); ++i)
+	{
+		uvBuf[i] = static_cast<uint8_t>((i * 7) & 0xff);
+	}
+
+	EnetUvDatagram dgram;
+	bool xfer = false;
+	EnetUvFillDatagramFromRecv(dgram, 512, (const char*)uvBuf, sizeof(uvBuf), 0, xfer);
+	REQUIRE(xfer);
+	REQUIRE(dgram.dataFromPool);
+	REQUIRE(memcmp(dgram.data, uvBuf, 512) == 0);
+
+	char enet[512];
+	memcpy(enet, dgram.data, 512);
+	REQUIRE(memcmp(enet, uvBuf, 512) == 0);
+
+	TEnetUvPacketPool pool(new uint8_t[TEnetUvPacketPool::kBufferSize]);
+	std::mutex poolLock;
+	dgram.ReleaseData(&pool, &poolLock);
 }

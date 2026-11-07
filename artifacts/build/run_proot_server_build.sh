@@ -13,8 +13,12 @@ echo "=== FXServer baseline build start $(date -u +%Y-%m-%dT%H:%M:%SZ) jobs=$JOB
 if [ ! -s "$ROOT/code/components/citizen-scripting-lua/include/NativesServer.h" ]; then
   /bin/bash "$ROOT/artifacts/build/run_natives_codegen_host.sh" | tee -a "$ROOT/artifacts/build/natives_codegen_host.log"
 fi
-export SKIP_NATIVES=1
-sudo env JOB_SLOTS="$JOB_SLOTS" SKIP_NATIVES=1 CI_BRANCH="$CI_BRANCH" CI_BUILD_NUMBER="$CI_BUILD_NUMBER" CI_PIPELINE_ID="$CI_PIPELINE_ID" \
+# CI-equivalent natives must be generated before proot make (see wait_native_doc_and_codegen.sh).
+if [ ! -s "$ROOT/ext/natives/inp/natives_cfx.lua" ] || [ "$(wc -c <"$ROOT/ext/natives/inp/natives_cfx.lua")" -lt 1000 ]; then
+  echo "ERROR: natives_cfx.lua not ready; run artifacts/build/wait_native_doc_and_codegen.sh"
+  exit 1
+fi
+sudo env JOB_SLOTS="$JOB_SLOTS" CI_BRANCH="$CI_BRANCH" CI_BUILD_NUMBER="$CI_BUILD_NUMBER" CI_PIPELINE_ID="$CI_PIPELINE_ID" \
   proot \
   -b /dev:/dev \
   -b /sys:/sys \
