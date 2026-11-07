@@ -1,0 +1,19 @@
+batch  1000 base p50=[0.377, 0.391, 0.392] p99=[0.602, 0.666, 0.588] msgs/tick=100.0 bytes/tick=6669.5 check=['-', '-', '-']
+batch  1000 opt  p50=[0.127, 0.131, 0.127] p99=[0.221, 0.239, 0.183] msgs/tick=1.0 bytes/tick=2928.4 check=['-', '-', '-']
+batch  3000 base p50=[1.198, 1.269, 1.204] p99=[1.612, 1.875, 2.009] msgs/tick=300.0 bytes/tick=20221.8 check=['-', '-', '-']
+batch  3000 opt  p50=[0.38, 0.571, 0.676] p99=[0.586, 0.666, 0.742] msgs/tick=1.0 bytes/tick=9025.7 check=['-', '-', '-']
+cache  1000 base p50=[5.118, 4.739, 4.69] p99=[7.987, 7.084, 6.649] msgs/tick=2000.0 bytes/tick=97560.0 check=['-', '-', '-']
+cache  1000 opt  p50=[0.599, 0.628, 0.622] p99=[1.679, 1.078, 1.692] msgs/tick=2000.0 bytes/tick=97560.0 check=['-', '-', '-']
+cache  3000 base p50=[16.139, 14.883, 24.567] p99=[23.245, 24.475, 25.824] msgs/tick=6000.0 bytes/tick=297156.0 check=['-', '-', '-']
+cache  3000 opt  p50=[2.273, 1.93, 1.891] p99=[3.446, 2.779, 2.78] msgs/tick=6000.0 bytes/tick=297156.0 check=['-', '-', '-']
+grid   1000 base p50=[71.206, 70.759, 132.094] p99=[83.554, 75.199, 137.058] msgs/tick=1.0 bytes/tick=3.0 check=['494', '474', '532']
+grid   1000 opt  p50=[0.963, 1.083, 0.862] p99=[1.112, 1.663, 1.01] msgs/tick=1.0 bytes/tick=3.0 check=['494', '474', '532']
+grid   3000 base p50=[672.271, 687.751, 658.31] p99=[774.576, 812.883, 1093.675] msgs/tick=1.0 bytes/tick=4.0 check=['4550', '4430', '4428']
+grid   3000 opt  p50=[3.733, 3.317, 3.406] p99=[4.322, 6.3, 4.924] msgs/tick=1.0 bytes/tick=4.0 check=['4550', '4430', '4428']
+
+batch N=1000: median p50 0.391 -> 0.127 ms/tick (67.5% less CPU, 3.1x)
+batch N=3000: median p50 1.204 -> 0.571 ms/tick (52.6% less CPU, 2.1x)
+cache N=1000: median p50 4.739 -> 0.622 ms/tick (86.9% less CPU, 7.6x)
+cache N=3000: median p50 16.139 -> 1.930 ms/tick (88.0% less CPU, 8.4x)
+grid N=1000: median p50 71.206 -> 0.963 ms/tick (98.6% less CPU, 73.9x)
+grid N=3000: median p50 672.271 -> 3.406 ms/tick (99.5% less CPU, 197.4x)

@@ -106,8 +106,62 @@ enet_host_random_seed(void)
 struct Datagram
 {
 	sockaddr_in6 from;
-	std::unique_ptr<char[]> data;
-	ssize_t read;
+	ssize_t read = 0;
+	char* data = nullptr;
+	bool dataFromPool = false;
+
+	~Datagram()
+	{
+		ReleaseData();
+	}
+
+	Datagram() = default;
+
+	Datagram(Datagram&& other) noexcept
+		: from(other.from), read(other.read), data(other.data), dataFromPool(other.dataFromPool)
+	{
+		other.data = nullptr;
+		other.dataFromPool = false;
+	}
+
+	Datagram& operator=(Datagram&& other) noexcept
+	{
+		if (this != &other)
+		{
+			ReleaseData();
+			from = other.from;
+			read = other.read;
+			data = other.data;
+			dataFromPool = other.dataFromPool;
+			other.data = nullptr;
+			other.dataFromPool = false;
+		}
+		return *this;
+	}
+
+	Datagram(const Datagram&) = delete;
+	Datagram& operator=(const Datagram&) = delete;
+
+	void ReleaseData()
+	{
+		if (!data)
+		{
+			return;
+		}
+
+		if (dataFromPool)
+		{
+			std::unique_lock<std::mutex> lock(packetAllocatorLock);
+			packetAllocator->deallocate(data, TPacketPool::kNodeSize);
+		}
+		else
+		{
+			delete[] data;
+		}
+
+		data = nullptr;
+		dataFromPool = false;
+	}
 };
 
 struct UdpSocket
@@ -215,6 +269,7 @@ enet_socket_bind(ENetSocket socket, const ENetAddress* address)
 			}
 
 			auto udpSocket = (UdpSocket*)handle->data;
+			bool transferredPoolBuffer = false;
 
 			if (addr && addr->sa_family == AF_INET6)
 			{
@@ -224,8 +279,19 @@ enet_socket_bind(ENetSocket socket, const ENetAddress* address)
 
 				if (nread > 0)
 				{
-					dgram.data = std::unique_ptr<char[]>(new char[nread]);
-					memcpy(dgram.data.get(), buf->base, nread);
+					// Retain the libuv receive pool buffer when it fits; avoids an extra
+					// heap allocation and copy before ENet reads the datagram payload.
+					if (buf->len <= TPacketPool::kNodeSize)
+					{
+						dgram.data = buf->base;
+						dgram.dataFromPool = true;
+						transferredPoolBuffer = true;
+					}
+					else
+					{
+						dgram.data = new char[nread];
+						memcpy(dgram.data, buf->base, nread);
+					}
 				}
 
 				// we do *not* want to handle empty datagrams
@@ -241,14 +307,17 @@ enet_socket_bind(ENetSocket socket, const ENetAddress* address)
 				}
 			}
 
-			if (buf->len > TPacketPool::kNodeSize)
+			if (!transferredPoolBuffer)
 			{
-				free(buf->base);
-			}
-			else
-			{
-				std::unique_lock<std::mutex> lock(packetAllocatorLock);
-				packetAllocator->deallocate(buf->base, TPacketPool::kNodeSize);
+				if (buf->len > TPacketPool::kNodeSize)
+				{
+					free(buf->base);
+				}
+				else
+				{
+					std::unique_lock<std::mutex> lock(packetAllocatorLock);
+					packetAllocator->deallocate(buf->base, TPacketPool::kNodeSize);
+				}
 			}
 		});
 	}
@@ -395,7 +464,7 @@ enet_socket_receive(ENetSocket socket,
 	{
 		nread = std::min(buffers[0].dataLength, static_cast<size_t>(nread));
 
-		memcpy(buffers[0].data, dgram.data.get(), nread);
+		memcpy(buffers[0].data, dgram.data, nread);
 	}
 
 	return nread;

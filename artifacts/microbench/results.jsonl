@@ -1,0 +1,8 @@
+# interleaved order: baseline1, opt1, opt2, baseline2, baseline3, opt3
+# pinned_source_sha=5c3065c261fb3ba82032fee6803f247198fec221
+trial=1 mode=baseline ns=84733214 packets=2000000
+trial=1 mode=optimized ns=32855918 packets=2000000
+trial=2 mode=optimized ns=41151155 packets=2000000
+trial=2 mode=baseline ns=93180463 packets=2000000
+trial=3 mode=baseline ns=93150282 packets=2000000
+trial=3 mode=optimized ns=33538415 packets=2000000

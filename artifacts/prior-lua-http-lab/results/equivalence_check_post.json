@@ -1,0 +1,1 @@
+{"cache": {"checked": 200, "mismatch_after_retry": 0, "sample": "{\"hp\":200,\"job\":\"civ\",\"id\":7,\"money\":98}"}, "near": {"checked": 200, "mismatch_after_retry": 0, "sample": "{\"id\":7,\"near\":1}"}, "list": {"checked": 200, "mismatch_after_retry": 0, "sample": "7,civ,98\n8,civ,124\n9,civ,121\n10,police,126\n11,civ,134\n12,civ,154\n13,civ,162\n14,c"}}

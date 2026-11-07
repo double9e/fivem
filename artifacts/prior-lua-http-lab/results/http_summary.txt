@@ -1,0 +1,18 @@
+cache c= 1 ok_rps base [3779.6, 4201.5, 4466.3] (median 4201.5) | opt [3855.3, 4139.8, 4604.4] (median 4139.8) | change -1.5% (denominator=base median 4201.5)
+      p99 ms base [1.484, 1.223, 0.972] -> opt [1.292, 1.281, 1.029] | cpu% base [90.5, 89.8, 88.6] opt [89.5, 89.5, 88.6] | non_ok base 0 opt 0 | hitch lines base [0, 0, 0] opt [0, 0, 0]
+cache c= 8 ok_rps base [7339.0, 7539.2, 8137.6] (median 7539.2) | opt [7537.2, 7338.1, 7831.6] (median 7537.2) | change -0.0% (denominator=base median 7539.2)
+      p99 ms base [3.812, 3.941, 3.46] -> opt [3.829, 4.021, 3.678] | cpu% base [190.9, 191.2, 193.0] opt [193.2, 191.4, 194.9] | non_ok base 0 opt 0 | hitch lines base [28, 22, 21] opt [18, 21, 25]
+cache c=32 ok_rps base [6873.0, 7814.9, 7557.8] (median 7557.8) | opt [6667.9, 7980.5, 8091.3] (median 7980.5) | change +5.6% (denominator=base median 7557.8)
+      p99 ms base [32.934, 23.231, 26.369] -> opt [39.051, 26.637, 27.275] | cpu% base [193.3, 189.4, 188.8] opt [192.0, 192.9, 193.5] | non_ok base 0 opt 0 | hitch lines base [2, 3, 2] opt [8, 4, 2]
+near  c= 1 ok_rps base [1462.8, 1761.7, 1724.3] (median 1724.3) | opt [3908.2, 3978.6, 4352.4] (median 3978.6) | change +130.7% (denominator=base median 1724.3)
+      p99 ms base [2.148, 1.683, 1.803] -> opt [1.324, 1.262, 1.115] | cpu% base [96.4, 95.3, 94.4] opt [92.7, 93.1, 89.6] | non_ok base 0 opt 0 | hitch lines base [0, 0, 0] opt [0, 0, 0]
+near  c= 8 ok_rps base [2341.3, 2113.0, 2613.4] (median 2341.3) | opt [7143.5, 7425.8, 7968.4] (median 7425.8) | change +217.2% (denominator=base median 2341.3)
+      p99 ms base [18.116, 22.527, 14.335] -> opt [4.141, 3.929, 3.718] | cpu% base [135.5, 131.6, 134.5] opt [188.5, 189.6, 189.3] | non_ok base 0 opt 0 | hitch lines base [4, 3, 3] opt [17, 21, 28]
+near  c=32 ok_rps base [2330.4, 2292.4, 2691.3] (median 2330.4) | opt [7637.8, 7822.6, 8184.8] (median 7822.6) | change +235.7% (denominator=base median 2330.4)
+      p99 ms base [176.542, 182.848, 158.828] -> opt [26.56, 29.494, 26.729] | cpu% base [132.5, 131.4, 134.9] opt [191.2, 189.4, 190.5] | non_ok base 0 opt 0 | hitch lines base [2, 2, 2] opt [2, 4, 3]
+list  c= 1 ok_rps base [1522.0, 1583.2, 1724.3] (median 1583.2) | opt [2223.5, 2075.4, 2483.8] (median 2223.5) | change +40.4% (denominator=base median 1583.2)
+      p99 ms base [1.34, 1.376, 1.238] -> opt [1.124, 1.36, 1.091] | cpu% base [95.0, 94.1, 92.9] opt [95.7, 95.2, 94.7] | non_ok base 0 opt 0 | hitch lines base [0, None, 0] opt [0, None, 0]
+list  c= 8 ok_rps base [1972.9, 1868.1, 2264.9] (median 1972.9) | opt [3284.4, 1648.3, 3318.8] (median 3284.4) | change +66.5% (denominator=base median 1972.9)
+      p99 ms base [20.976, 25.112, 17.582] -> opt [11.602, 13.466, 11.404] | cpu% base [128.0, 134.2, 130.4] opt [143.5, 118.7, 142.2] | non_ok base 0 opt 7 | hitch lines base [4, 2, 2] opt [2, 7, 3]
+list  c=32 ok_rps base [1841.9, 2010.6, 2125.0] (median 2010.6) | opt [2981.9, 3121.9, 3107.5] (median 3107.5) | change +54.6% (denominator=base median 2010.6)
+      p99 ms base [219.647, 212.088, 209.414] -> opt [121.996, 135.109, 133.376] | cpu% base [127.1, 128.2, 128.8] opt [141.2, 139.7, 140.5] | non_ok base 0 opt 0 | hitch lines base [2, 2, 2] opt [2, 3, 2]
