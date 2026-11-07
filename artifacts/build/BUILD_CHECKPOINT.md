@@ -1,4 +1,4 @@
-# Build checkpoint — final for this bounded effort (2026-11-07 ~04:35 UTC)
+# Build checkpoint — superseded by `FINAL_BLOCKED.md` (VM jobs stopped 2026-11-07)
 
 ## Still running (coordinator: do not duplicate make)
 
