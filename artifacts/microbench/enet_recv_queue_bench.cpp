@@ -55,10 +55,22 @@ struct Pool
 	}
 };
 
+static uint32_t checksum_buf(const char* p, size_t n)
+{
+	uint32_t c = 2166136261u;
+	for (size_t i = 0; i < n; ++i)
+	{
+		c ^= static_cast<uint8_t>(p[i]);
+		c *= 16777619u;
+	}
+	return c;
+}
+
 static uint64_t bench_baseline()
 {
 	Pool pool;
 	char enetBuf[kEnetBufSize];
+	uint32_t acc = 0;
 
 	auto t0 = std::chrono::steady_clock::now();
 	for (size_t i = 0; i < kPacketsPerTrial; ++i)
@@ -73,7 +85,13 @@ static uint64_t bench_baseline()
 
 		size_t n = std::min(kPacketSize, kEnetBufSize);
 		memcpy(enetBuf, heap, n);
+		acc ^= checksum_buf(enetBuf, n);
 		delete[] heap;
+	}
+	if (acc == 0)
+	{
+		std::cerr << "checksum collapsed\n";
+		return 0;
 	}
 	auto t1 = std::chrono::steady_clock::now();
 	return std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
@@ -83,6 +101,7 @@ static uint64_t bench_optimized()
 {
 	Pool pool;
 	char enetBuf[kEnetBufSize];
+	uint32_t acc = 0;
 
 	auto t0 = std::chrono::steady_clock::now();
 	for (size_t i = 0; i < kPacketsPerTrial; ++i)
@@ -92,7 +111,13 @@ static uint64_t bench_optimized()
 
 		size_t n = std::min(kPacketSize, kEnetBufSize);
 		memcpy(enetBuf, uvBuf, n);
+		acc ^= checksum_buf(enetBuf, n);
 		pool.deallocate(uvBuf);
+	}
+	if (acc == 0)
+	{
+		std::cerr << "checksum collapsed\n";
+		return 0;
 	}
 	auto t1 = std::chrono::steady_clock::now();
 	return std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();

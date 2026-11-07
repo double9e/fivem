@@ -31,7 +31,10 @@
 - `code/tools/ci/build_server_proot_alpine.sh` — **Alpine 3.16 + proot**, mirror APK ของ Cfx, `premake5 gmake2 --game=server --cc=clang`, `make config=release`, ผลที่ `bin/server/linux/release/FXServer`
 - ต้องมี submodule เต็ม, mono 5.16, v8, lld, ชุดแพ็กเกจจาก `https://cfx-content.akamaized.net/mirrors/build/linux/packages/cfx`
 
-## สถานะ build บน Cloud VM นี้ (Ubuntu 24.04)
+## Experimental status
+**ไม่พร้อม production** — patch pool-buffer + backlog cap ยังไม่ผ่าน FXServer artifact validation
+
+## สถานะ build บน Cloud VM นี้ (Ubuntu 24.04 + Alpine proot)
 | ขั้นตอน | ผล |
 |---------|-----|
 | `premake5 gmake2 --game=server` | สำเร็จ หลัง init `vendor/msgpack-c` |
