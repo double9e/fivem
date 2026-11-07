@@ -1,0 +1,32 @@
+==== Building fmtlib (release) ====
+==== Building utfcpp (release) ====
+==== Building catch2 (release) ====
+==== Building msgpack-c (release) ====
+Creating obj/Release/utfcpp
+Creating ../../../bin/server/linux/release
+Creating obj/Release/catch2
+Creating obj/Release/msgpack-c
+Creating ../../../bin/server/linux/release
+Linking fmtlib
+Creating ../../../bin/server/linux/release
+Creating ../../../bin/server/linux/release
+catch_amalgamated.cpp
+dummy.c
+objectc.c
+==== Building boost_program_options (release) ====
+make[1]: *** No rule to make target '../../../../vendor/boost-submodules/boost-program-options/src/cmdline.cpp', needed by 'obj/Release/boost_program_options/cmdline.o'.  Stop.
+make: *** [Makefile:560: boost_program_options] Error 2
+make: *** Waiting for unfinished jobs....
+unpack.c
+In file included from ../../../vendor/catch2/src/catch_amalgamated.cpp:16:
+../../../vendor/catch2/include/catch_amalgamated.hpp:583:10: fatal error: 'type_traits' file not found
+  583 | #include <type_traits>
+      |          ^~~~~~~~~~~~~
+Linking utfcpp
+version.c
+vrefbuffer.c
+1 error generated.
+make[1]: *** [catch2.make:140: obj/Release/catch2/catch_amalgamated.o] Error 1
+make: *** [Makefile:698: catch2] Error 2
+zone.c
+Linking msgpack-c

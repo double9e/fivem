@@ -1,0 +1,6 @@
+- Artifact versions API: https://changelogs-live.fivem.net/api/changelog/versions/linux/server (build 38435, sha256 in artifact.sha256)
+- License keys: https://portal.cfx.re/servers/registration-keys
+- SetHttpHandler (official): https://docs.fivem.net/natives/?_0xF5C6330C= ; source https://github.com/citizenfx/fivem/blob/master/ext/native-decls/SetHttpHandler.md
+- Profiler (Cfx docs, finding hitch source): https://docs.fivem.net/docs/scripting-manual/debugging/using-profiler/
+- Lua Performance Tips, R. Ierusalimschy (string concat buffer table.concat, reuse/memoize): https://www.lua.org/gems/sample.pdf
+- Lua 5.4.7 source: https://www.lua.org/ftp/lua-5.4.7.tar.gz (sha256 in lua.sha256)
