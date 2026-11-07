@@ -39,7 +39,7 @@ make FXServer -j1 config=release
 → make: *** No rule to make target 'FXServer'.  Stop.
 ```
 
-(Log: `make_fxserver_6min.log`.) Premake server target name may differ in generated graph; full tree was never built to launcher binary on this VM.
+(Log: `make_fxserver_6min.log`.) Premake output target is **`DuplicityMain`** (links to `FXServer` binary); agent used wrong make target in the timed retry. Full **DuplicityMain** release link never completed on this VM.
 
 ## proot / compiler environment (feasible alternatives)
 
