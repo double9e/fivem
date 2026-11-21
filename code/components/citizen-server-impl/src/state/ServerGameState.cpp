@@ -1470,7 +1470,8 @@ void ServerGameState::Tick(fx::ServerInstanceBase* instance)
 		auto& entitiesToDestroy = clientDataUnlocked->entitiesToDestroy;
 		for (auto entityIt = syncedEntities.begin(), entityEnd = syncedEntities.end(); entityIt != entityEnd;)
 		{
-			auto [identPair, syncData] = *entityIt;
+			const auto& identPair = entityIt->first;
+			auto& syncData = entityIt->second;
 			auto oldIt = entityIt;
 
 			++entityIt;
