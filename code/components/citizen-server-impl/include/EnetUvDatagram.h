@@ -11,8 +11,8 @@
 #include <mutex>
 
 // Shared constants matching EnetUv.cpp receive pool geometry.
-inline constexpr size_t kEnetUvPacketPoolNodeSize = 65536;
-inline constexpr size_t kEnetUvPacketPoolNodeCount = 512;
+inline constexpr size_t kEnetUvPacketPoolNodeSize = 4096;
+inline constexpr size_t kEnetUvPacketPoolNodeCount = 8192;
 inline constexpr size_t kEnetUvMaxPoolRetainedQueuedDatagrams = 64;
 
 using TEnetUvPacketPool = eastl::fixed_node_allocator<kEnetUvPacketPoolNodeSize, kEnetUvPacketPoolNodeCount, 16, 0, true>;
