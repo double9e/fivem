@@ -179,6 +179,14 @@ static void alloc_buffer(TAllocator& allocator, std::mutex& allocatorLock, uv_ha
 	*buf = uv_buf_init((char*)((suggested_size <= TAllocator::kNodeSize) ? allocator.allocate(TAllocator::kNodeSize) : malloc(suggested_size)), suggested_size);
 }
 
+// libuv suggests ~64KiB for UDP recv; hand back a fixed pool node instead (ENet MTU <= 4096).
+static void alloc_udp_recv_buffer(uv_handle_t* handle, size_t suggestedSize, uv_buf_t* buf)
+{
+	std::unique_lock<std::mutex> lock(packetAllocatorLock);
+	char* base = (char*)packetAllocator->allocate(TPacketPool::kNodeSize);
+	*buf = uv_buf_init(base, TPacketPool::kNodeSize);
+}
+
 fwEvent<> OnEnetReceive;
 
 extern "C" int
@@ -218,10 +226,7 @@ enet_socket_bind(ENetSocket socket, const ENetAddress* address)
 	{
 		sd->udp.get()->data = sd.get();
 
-		uv_udp_recv_start(&sd->udp, [](uv_handle_t* handle, size_t suggestedSize, uv_buf_t* buf)
-		{
-			return alloc_buffer(*packetAllocator, packetAllocatorLock, handle, suggestedSize, buf);
-		}, [](uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf,
+		uv_udp_recv_start(&sd->udp, alloc_udp_recv_buffer, [](uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf,
 			const struct sockaddr* addr, unsigned flags)
 		{
 			auto udpSocket = (UdpSocket*)handle->data;
@@ -229,6 +234,13 @@ enet_socket_bind(ENetSocket socket, const ENetAddress* address)
 
 			// we don't want to tell the world about errors
 			if (nread < 0)
+			{
+				EnetUvReleaseUvBuffer(buf->base, buf->len, packetAllocator, &packetAllocatorLock);
+				return;
+			}
+
+			// Datagram larger than pool/ENet MTU was truncated; drop (no heap fallback on recv path).
+			if (flags & UV_UDP_PARTIAL)
 			{
 				EnetUvReleaseUvBuffer(buf->base, buf->len, packetAllocator, &packetAllocatorLock);
 				return;
