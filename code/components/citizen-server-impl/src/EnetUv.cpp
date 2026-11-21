@@ -10,7 +10,9 @@
 
 #include <EASTL/internal/fixed_pool.h>
 
-using TPacketPool = eastl::fixed_node_allocator<65536, 512, 16, 0, true>;
+#include <EnetUvDatagram.h>
+
+using TPacketPool = TEnetUvPacketPool;
 static TPacketPool* packetAllocator;
 static std::mutex packetAllocatorLock;
 
@@ -103,17 +105,25 @@ enet_host_random_seed(void)
 	return static_cast<enet_uint32>(uv_hrtime());
 }
 
-struct Datagram
-{
-	sockaddr_in6 from;
-	std::unique_ptr<char[]> data;
-	ssize_t read;
-};
-
 struct UdpSocket
 {
 	UvHandleContainer<uv_udp_t> udp;
-	std::deque<Datagram> recvQueue;
+	std::deque<EnetUvDatagram> recvQueue;
+
+	~UdpSocket()
+	{
+		DrainRecvQueue();
+	}
+
+	void DrainRecvQueue()
+	{
+		while (!recvQueue.empty())
+		{
+			auto& d = recvQueue.front();
+			d.ReleaseData(packetAllocator, &packetAllocatorLock);
+			recvQueue.pop_front();
+		}
+	}
 };
 
 static std::unordered_map<ENetSocket, std::shared_ptr<UdpSocket>>* g_sockets = new std::unordered_map<ENetSocket, std::shared_ptr<UdpSocket>>();
@@ -147,7 +157,13 @@ enet_socket_create(ENetSocketType type)
 extern "C" void
 enet_socket_destroy(ENetSocket socket)
 {
-	g_sockets->erase(socket);
+	auto socketIt = g_sockets->find(socket);
+
+	if (socketIt != g_sockets->end())
+	{
+		socketIt->second->DrainRecvQueue();
+		g_sockets->erase(socketIt);
+	}
 }
 
 extern "C" int
@@ -208,25 +224,23 @@ enet_socket_bind(ENetSocket socket, const ENetAddress* address)
 		}, [](uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf,
 			const struct sockaddr* addr, unsigned flags)
 		{
+			auto udpSocket = (UdpSocket*)handle->data;
+			bool transferredPoolBuffer = false;
+
 			// we don't want to tell the world about errors
 			if (nread < 0)
 			{
+				EnetUvReleaseUvBuffer(buf->base, buf->len, packetAllocator, &packetAllocatorLock);
 				return;
 			}
-
-			auto udpSocket = (UdpSocket*)handle->data;
 
 			if (addr && addr->sa_family == AF_INET6)
 			{
 				const sockaddr_in6* in6 = (const sockaddr_in6*)addr;
 
-				Datagram dgram;
+				EnetUvDatagram dgram;
 
-				if (nread > 0)
-				{
-					dgram.data = std::unique_ptr<char[]>(new char[nread]);
-					memcpy(dgram.data.get(), buf->base, nread);
-				}
+				EnetUvFillDatagramFromRecv(dgram, nread, buf->base, buf->len, udpSocket->recvQueue.size(), transferredPoolBuffer);
 
 				// we do *not* want to handle empty datagrams
 				// these are useless and confuse enet's packet processing loop
@@ -241,14 +255,9 @@ enet_socket_bind(ENetSocket socket, const ENetAddress* address)
 				}
 			}
 
-			if (buf->len > TPacketPool::kNodeSize)
+			if (!transferredPoolBuffer)
 			{
-				free(buf->base);
-			}
-			else
-			{
-				std::unique_lock<std::mutex> lock(packetAllocatorLock);
-				packetAllocator->deallocate(buf->base, TPacketPool::kNodeSize);
+				EnetUvReleaseUvBuffer(buf->base, buf->len, packetAllocator, &packetAllocatorLock);
 			}
 		});
 	}
@@ -395,8 +404,10 @@ enet_socket_receive(ENetSocket socket,
 	{
 		nread = std::min(buffers[0].dataLength, static_cast<size_t>(nread));
 
-		memcpy(buffers[0].data, dgram.data.get(), nread);
+		memcpy(buffers[0].data, dgram.data, nread);
 	}
+
+	dgram.ReleaseData(packetAllocator, &packetAllocatorLock);
 
 	return nread;
 }
