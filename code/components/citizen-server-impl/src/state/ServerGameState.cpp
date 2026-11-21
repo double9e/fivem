@@ -756,8 +756,21 @@ static void FlushBuffer(rl::MessageBuffer& buffer, uint32_t msgType, uint64_t fr
 		buffer.Write(3, 7);
 
 		// compress and send
-		std::vector<char> outData(LZ4_compressBound(buffer.GetDataLength()) + 4 + 8);
-		int len = LZ4_compress_default(reinterpret_cast<const char*>(buffer.GetBuffer().data()), outData.data() + 4 + 8, buffer.GetDataLength(), outData.size() - 4 - 8);
+		static thread_local LZ4_stream_t lz4Stream;
+		const int headerBytes = 4 + 8;
+		const int srcLen = buffer.GetDataLength();
+		const int maxCompressed = LZ4_compressBound(srcLen);
+
+		std::vector<char> outData;
+		outData.resize(headerBytes + maxCompressed);
+
+		const int len = LZ4_compress_fast_extState_fastReset(
+			&lz4Stream,
+			reinterpret_cast<const char*>(buffer.GetBuffer().data()),
+			outData.data() + headerBytes,
+			srcLen,
+			maxCompressed,
+			1);
 
 		FrameIndex newFrame{};
 		newFrame.frameIndex = frameIndex;
@@ -770,7 +783,8 @@ static void FlushBuffer(rl::MessageBuffer& buffer, uint32_t msgType, uint64_t fr
 		*(uint32_t*)(outData.data()) = msgType;
 		*(uint64_t*)(outData.data() + 4) = newFrame.full;
 
-		int bufferLen = len + 4 + 8;
+		const int bufferLen = len + headerBytes;
+		outData.resize(bufferLen);
 		net::Buffer netBuffer(reinterpret_cast<uint8_t*>(outData.data()), bufferLen);
 		netBuffer.Seek(bufferLen); // since the buffer constructor doesn't actually set the offset
 
