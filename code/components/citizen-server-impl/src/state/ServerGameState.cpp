@@ -8,6 +8,7 @@
 
 #include <NetBuffer.h>
 
+#define LZ4_STATIC_LINKING_ONLY
 #include <lz4.h>
 #include <lz4hc.h>
 
@@ -756,8 +757,21 @@ static void FlushBuffer(rl::MessageBuffer& buffer, uint32_t msgType, uint64_t fr
 		buffer.Write(3, 7);
 
 		// compress and send
-		std::vector<char> outData(LZ4_compressBound(buffer.GetDataLength()) + 4 + 8);
-		int len = LZ4_compress_default(reinterpret_cast<const char*>(buffer.GetBuffer().data()), outData.data() + 4 + 8, buffer.GetDataLength(), outData.size() - 4 - 8);
+		static thread_local LZ4_stream_t lz4Stream;
+		const int headerBytes = 4 + 8;
+		const int srcLen = buffer.GetDataLength();
+		const int maxCompressed = LZ4_compressBound(srcLen);
+
+		std::vector<char> outData;
+		outData.resize(headerBytes + maxCompressed);
+
+		const int len = LZ4_compress_fast_extState_fastReset(
+			&lz4Stream,
+			reinterpret_cast<const char*>(buffer.GetBuffer().data()),
+			outData.data() + headerBytes,
+			srcLen,
+			maxCompressed,
+			1);
 
 		FrameIndex newFrame{};
 		newFrame.frameIndex = frameIndex;
@@ -770,7 +784,8 @@ static void FlushBuffer(rl::MessageBuffer& buffer, uint32_t msgType, uint64_t fr
 		*(uint32_t*)(outData.data()) = msgType;
 		*(uint64_t*)(outData.data() + 4) = newFrame.full;
 
-		int bufferLen = len + 4 + 8;
+		const int bufferLen = len + headerBytes;
+		outData.resize(bufferLen);
 		net::Buffer netBuffer(reinterpret_cast<uint8_t*>(outData.data()), bufferLen);
 		netBuffer.Seek(bufferLen); // since the buffer constructor doesn't actually set the offset
 
@@ -1063,6 +1078,17 @@ void ServerGameState::Tick(fx::ServerInstanceBase* instance)
 		auto& currentSyncedEntities = clientDataUnlocked->syncedEntities;
 		decltype(clientDataUnlocked->syncedEntities) newSyncedEntities{};
 
+		WorldGrid* clientWorldGrid = nullptr;
+		{
+			const auto selfBucket = clientDataUnlocked->routingBucket;
+			std::shared_lock _(m_worldGridsMutex);
+			const auto gridIt = m_worldGrids.find(selfBucket);
+			if (gridIt != m_worldGrids.end())
+			{
+				clientWorldGrid = gridIt->second.get();
+			}
+		}
+
 		for (int entityIndex = 0; entityIndex < maxValidEntity; entityIndex++)
 		{
 			const auto& [entity, entityPos, vehicleData, entityClientWeak] = relevantEntities[entityIndex];
@@ -1104,14 +1130,9 @@ void ServerGameState::Tick(fx::ServerInstanceBase* instance)
 					int sectorX = std::max(entityPos.x + 8192.0f, 0.0f) / 150;
 					int sectorY = std::max(entityPos.y + 8192.0f, 0.0f) / 150;
 
-					auto selfBucket = clientDataUnlocked->routingBucket;
-
-					std::shared_lock _(m_worldGridsMutex);
-					const auto& grid = m_worldGrids[selfBucket];
-
-					if (grid && sectorX >= 0 && sectorY >= 0 && sectorX < 256 && sectorY < 256)
+					if (clientWorldGrid && sectorX >= 0 && sectorY >= 0 && sectorX < 256 && sectorY < 256)
 					{
-						if (grid->accel.netIDs[sectorX][sectorY] == netId)
+						if (clientWorldGrid->accel.netIDs[sectorX][sectorY] == netId)
 						{
 							return true;
 						}
@@ -1464,7 +1485,8 @@ void ServerGameState::Tick(fx::ServerInstanceBase* instance)
 		auto& entitiesToDestroy = clientDataUnlocked->entitiesToDestroy;
 		for (auto entityIt = syncedEntities.begin(), entityEnd = syncedEntities.end(); entityIt != entityEnd;)
 		{
-			auto [identPair, syncData] = *entityIt;
+			const auto& identPair = entityIt->first;
+			auto& syncData = entityIt->second;
 			auto oldIt = entityIt;
 
 			++entityIt;
